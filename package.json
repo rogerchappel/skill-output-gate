@@ -3,16 +3,41 @@
   "version": "0.1.0",
   "description": "Preflight completed agent outputs for evidence, verification, and handoff quality.",
   "type": "module",
-  "bin": { "skill-output-gate": "./src/cli.js" },
+  "bin": {
+    "skill-output-gate": "./src/cli.js"
+  },
   "scripts": {
     "test": "node --test",
     "check": "node --check src/index.js && node --check src/cli.js",
     "smoke": "node src/cli.js fixtures/good-summary.md --format markdown",
-    "build": "npm run check && npm test"
+    "build": "npm run check && npm test",
+    "package:smoke": "npm pack --dry-run",
+    "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke"
   },
-  "keywords": ["agent", "skill", "quality", "verification", "cli"],
+  "keywords": [
+    "agent",
+    "skill",
+    "quality",
+    "verification",
+    "cli"
+  ],
   "author": "Roger Chappel",
   "license": "MIT",
-  "engines": { "node": ">=20" },
-  "files": ["src", "docs", "SKILL.md", "README.md"]
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "src",
+    "docs",
+    "SKILL.md",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rogerchappel/skill-output-gate.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rogerchappel/skill-output-gate/issues"
+  },
+  "homepage": "https://github.com/rogerchappel/skill-output-gate#readme"
 }
