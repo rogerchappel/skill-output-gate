@@ -1,0 +1,7 @@
+{
+  "summary": "Completed docs, tests, and CLI smoke checks.",
+  "verification": ["npm test: pass"],
+  "artifacts": ["README.md", "SKILL.md"],
+  "risks": ["No known external side effects."],
+  "nextActions": ["Review release-candidate PR."]
+}
