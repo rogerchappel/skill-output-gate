@@ -29,8 +29,13 @@
   "files": [
     "src",
     "docs",
+    "examples",
+    "fixtures",
     "SKILL.md",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md"
   ],
   "repository": {
     "type": "git",

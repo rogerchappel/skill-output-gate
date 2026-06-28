@@ -53,6 +53,10 @@ npm run package:smoke
 npm run release:check
 ```
 
+`npm run package:smoke` prints the dry-run tarball contents. Review that output
+when changing fixtures, examples, or release documentation so the published
+package still carries the material users need to understand the gate.
+
 ## Safety Notes
 
 This package is local-only. It does not send final messages, touch GitHub, publish packages, or mutate external systems.
