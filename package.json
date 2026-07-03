@@ -12,7 +12,8 @@
     "smoke": "node src/cli.js fixtures/good-summary.md --format markdown",
     "build": "npm run check && npm test",
     "package:smoke": "npm pack --dry-run",
-    "release:check": "npm run check && npm test && npm run build && npm run smoke && npm run package:smoke"
+    "release:check": "npm run check && npm test && npm run build && npm run smoke && npm run package:smoke",
+    "lint": "npm run check"
   },
   "keywords": [
     "agent",
