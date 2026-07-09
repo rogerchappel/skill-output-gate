@@ -53,9 +53,11 @@ npm run package:smoke
 npm run release:check
 ```
 
-`npm run package:smoke` prints the dry-run tarball contents. Review that output
-when changing fixtures, examples, or release documentation so the published
-package still carries the material users need to understand the gate.
+`npm run package:smoke` runs a dry-run package build and fails if required
+runtime files, fixtures, examples, or support documents are missing from the
+tarball. Run it when changing fixtures, examples, or release documentation so
+the published package still carries the material users need to understand the
+gate.
 
 ## Safety Notes
 
