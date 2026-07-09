@@ -7,9 +7,13 @@ const file = args.find(arg => !arg.startsWith('-'));
 const format = valueAfter(args, '--format') || 'json';
 const output = valueAfter(args, '--output');
 const requiredArtifacts = valueAfter(args, '--required-artifacts');
-if (!file || args.includes('--help')) {
+if (args.includes('--help')) {
   console.log('Usage: skill-output-gate <summary.md|summary.json> [--format json|markdown] [--required-artifacts n]');
-  process.exit(file ? 0 : 1);
+  process.exit(0);
+}
+if (!file) {
+  console.log('Usage: skill-output-gate <summary.md|summary.json> [--format json|markdown] [--required-artifacts n]');
+  process.exit(1);
 }
 try {
   const report = loadRunSummary(file);
