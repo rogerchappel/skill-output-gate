@@ -9,7 +9,7 @@
   "scripts": {
     "test": "node --test",
     "check": "node --check src/index.js && node --check src/cli.js",
-    "smoke": "node src/cli.js fixtures/good-summary.md --format markdown",
+    "smoke": "node src/cli.js fixtures/good-summary.md --format markdown && node src/cli.js fixtures/bad-summary.md --format markdown >/tmp/skill-output-gate-blocking-smoke.txt; test $? -eq 2",
     "build": "npm run check && npm test",
     "package:smoke": "node scripts/package-smoke.mjs",
     "release:check": "npm run check && npm test && npm run build && npm run smoke && npm run package:smoke",
