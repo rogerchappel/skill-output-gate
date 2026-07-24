@@ -7,17 +7,21 @@ const file = args.find(arg => !arg.startsWith('-'));
 const format = valueAfter(args, '--format') || 'json';
 const output = valueAfter(args, '--output');
 const requiredArtifacts = valueAfter(args, '--required-artifacts');
+const usage = 'Usage: skill-output-gate <summary.md|summary.json> [--format json|markdown] [--required-artifacts positive-integer]';
 if (args.includes('--help')) {
-  console.log('Usage: skill-output-gate <summary.md|summary.json> [--format json|markdown] [--required-artifacts n]');
+  console.log(usage);
   process.exit(0);
 }
 if (!file) {
-  console.log('Usage: skill-output-gate <summary.md|summary.json> [--format json|markdown] [--required-artifacts n]');
+  console.log(usage);
   process.exit(1);
 }
 try {
+  if (args.includes('--required-artifacts') && !isPositiveInteger(requiredArtifacts)) {
+    throw new TypeError(`--required-artifacts must be a positive integer\n${usage}`);
+  }
   const report = loadRunSummary(file);
-  const options = requiredArtifacts ? { requiredArtifacts } : {};
+  const options = requiredArtifacts === undefined ? {} : { requiredArtifacts };
   const gate = evaluateGate(report, options);
   const rendered = format === 'markdown' ? renderMarkdown(report, gate) : JSON.stringify(toJsonReport(report, options), null, 2);
   if (output) fs.writeFileSync(output, `${rendered}\n`);
@@ -28,3 +32,7 @@ try {
   process.exit(1);
 }
 function valueAfter(args, flag) { const index = args.indexOf(flag); return index === -1 ? undefined : args[index + 1]; }
+function isPositiveInteger(value) {
+  const number = Number(value);
+  return value !== undefined && Number.isInteger(number) && number > 0;
+}
