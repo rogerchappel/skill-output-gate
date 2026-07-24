@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 const PASS_WORDS = ['pass', 'passed', 'ok', 'success', 'succeeded'];
 const FAIL_WORDS = ['fail', 'failed', 'error', 'blocked', 'not run', 'skipped'];
+const NEGATED_PASS = /\b(?:did|does|do|has|have|had|was|were|is|are)?\s*(?:not|never)\s+(?:pass(?:ed)?|succeed(?:ed)?|successful|ok)\b/i;
 
 export function parseRunSummary(text, source = 'inline') {
   const body = String(text || '').replace(/\r\n/g, '\n');
@@ -23,16 +24,24 @@ export function loadRunSummary(path) {
 
 export function evaluateGate(report, options = {}) {
   const findings = [];
-  const requiredArtifacts = Number(options.requiredArtifacts ?? 1);
+  const requiredArtifacts = parseRequiredArtifacts(options.requiredArtifacts);
   if (!report.summary || report.summary.length < 12) findings.push(fail('missing_summary', 'A concise result summary is required.'));
   if (report.artifacts.length < requiredArtifacts) findings.push(fail('missing_artifacts', `Expected at least ${requiredArtifacts} artifact reference(s).`));
   if (report.verification.length === 0) findings.push(fail('missing_verification', 'Verification commands or results are required.'));
-  if (report.verification.some(item => hasWord(item, FAIL_WORDS))) findings.push(fail('failed_verification', 'A verification entry reports failure or was not run.'));
+  if (report.verification.some(item => hasFailedVerification(item))) findings.push(fail('failed_verification', 'A verification entry reports failure or was not run.'));
   if (!report.verification.some(item => hasWord(item, PASS_WORDS))) findings.push(warn('no_passing_check', 'No verification entry clearly reports a passing result.'));
   if (report.risks.length === 0) findings.push(warn('missing_risk_note', 'Add a risk, limitation, or explicit none-known note.'));
   if (report.nextActions.length === 0) findings.push(warn('missing_next_action', 'Add next recommended action or explicit no-follow-up note.'));
   const status = findings.some(item => item.level === 'fail') ? 'fail' : findings.length ? 'warn' : 'pass';
   return { status, findings };
+}
+
+function parseRequiredArtifacts(value) {
+  const requiredArtifacts = Number(value ?? 1);
+  if (!Number.isInteger(requiredArtifacts) || requiredArtifacts < 1) {
+    throw new TypeError('requiredArtifacts must be a positive integer');
+  }
+  return requiredArtifacts;
 }
 
 export function readinessScore(report, gate = evaluateGate(report)) {
@@ -90,6 +99,7 @@ function normalize(report, source) {
 }
 
 function hasWord(text, words) { return words.some(word => new RegExp(`\\b${word.replace(' ', '\\s+')}\\b`, 'i').test(text)); }
+function hasFailedVerification(text) { return NEGATED_PASS.test(text) || hasWord(text, FAIL_WORDS); }
 function unique(items) { return [...new Set(items.map(item => String(item).trim()).filter(Boolean))]; }
 function firstHeading(text) { return text.match(/^#\s+(.+)$/m)?.[1]?.trim(); }
 function firstParagraph(text) { return text.split('\n').map(line => line.trim()).find(line => line && !line.startsWith('#') && !line.startsWith('-')) || ''; }

@@ -75,3 +75,59 @@ test('cli help is available without a summary file', () => {
   assert.equal(result.stderr, '');
   assert.match(result.stdout, /Usage: skill-output-gate/);
 });
+
+test('fails negated and mixed verification statuses', () => {
+  for (const verification of [
+    ['Tests did not pass'],
+    ['Lint passed', 'Tests did not pass'],
+    ['Build succeeded', 'Tests were not successful'],
+  ]) {
+    const gate = evaluateGate(completeReport({ verification }));
+    assert.equal(gate.status, 'fail', verification.join('; '));
+    assert.ok(gate.findings.some(item => item.code === 'failed_verification'));
+  }
+});
+
+test('accepts unambiguous passing verification statuses', () => {
+  for (const verification of [['Tests passed'], ['Build succeeded'], ['Lint OK']]) {
+    assert.equal(evaluateGate(completeReport({ verification })).status, 'pass');
+  }
+});
+
+test('rejects invalid required artifact thresholds through the API', () => {
+  for (const requiredArtifacts of ['abc', -2, 1.5, 0]) {
+    assert.throws(
+      () => evaluateGate(completeReport(), { requiredArtifacts }),
+      /requiredArtifacts must be a positive integer/
+    );
+  }
+});
+
+test('rejects invalid --required-artifacts values with a CLI usage error', () => {
+  for (const args of [
+    ['fixtures/good-summary.md', '--required-artifacts'],
+    ['fixtures/good-summary.md', '--required-artifacts', 'abc'],
+    ['fixtures/good-summary.md', '--required-artifacts', '-2'],
+    ['fixtures/good-summary.md', '--required-artifacts', '1.5'],
+    ['fixtures/good-summary.md', '--required-artifacts', '0'],
+  ]) {
+    const result = spawnSync(process.execPath, ['src/cli.js', ...args], {
+      cwd: new URL('..', import.meta.url),
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 1, args.join(' '));
+    assert.match(result.stderr, /--required-artifacts must be a positive integer/);
+    assert.match(result.stderr, /Usage:/);
+  }
+});
+
+function completeReport(overrides = {}) {
+  return {
+    summary: 'A sufficiently detailed result summary.',
+    artifacts: ['README.md'],
+    verification: ['Tests passed'],
+    risks: ['None known'],
+    nextActions: ['No follow-up'],
+    ...overrides,
+  };
+}
