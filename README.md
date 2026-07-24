@@ -28,15 +28,19 @@ npm install -g skill-output-gate
 ## CLI
 
 ```bash
-skill-output-gate <summary.md|summary.json> [--format json|markdown] [--required-artifacts n]
+skill-output-gate <summary.md|summary.json> [--format json|markdown] [--required-artifacts positive-integer]
 ```
 
-The command exits with `0` for acceptable output, `1` for unreadable input, and
-`2` when the output has blocking findings.
+`--required-artifacts` defaults to `1`. When supplied, it must be a positive
+integer; missing, zero, negative, fractional, and non-numeric values are usage
+errors. The command exits with `0` for acceptable output, `1` for invalid
+options or unreadable input, and `2` when the output has blocking findings.
 
 ## What It Checks
 
 - verification commands are present and tied to the reported work
+- negated success wording (for example, `Tests did not pass`) is treated as a
+  failed verification, even when another check passed
 - artifact references are concrete enough for review
 - handoff text includes remaining risks or follow-up when needed
 - required artifact counts meet the configured threshold
