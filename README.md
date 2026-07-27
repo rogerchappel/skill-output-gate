@@ -28,13 +28,16 @@ npm install -g skill-output-gate
 ## CLI
 
 ```bash
-skill-output-gate <summary.md|summary.json> [--format json|markdown] [--required-artifacts positive-integer]
+skill-output-gate <summary.md|summary.json> [--format json|markdown] [--output path] [--required-artifacts positive-integer]
 ```
 
 `--required-artifacts` defaults to `1`. When supplied, it must be a positive
 integer; missing, zero, negative, fractional, and non-numeric values are usage
-errors. The command exits with `0` for acceptable output, `1` for invalid
-options or unreadable input, and `2` when the output has blocking findings.
+errors. Use `--output` to write the report to a file instead of standard output.
+Options may appear before or after the summary file. Unknown options, extra
+positional arguments, and missing or unsupported option values are usage errors.
+The command exits with `0` for acceptable output, `1` for invalid options or
+unreadable input, and `2` when the output has blocking findings.
 
 ## What It Checks
 
