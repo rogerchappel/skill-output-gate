@@ -76,6 +76,48 @@ test('cli help is available without a summary file', () => {
   assert.match(result.stdout, /Usage: skill-output-gate/);
 });
 
+test('cli accepts documented options before the summary file', () => {
+  const result = runCli(['--format', 'markdown', '--required-artifacts', '1', 'fixtures/good-summary.md']);
+
+  assert.equal(result.status, 0);
+  assert.equal(result.stderr, '');
+  assert.match(result.stdout, /Status: pass/);
+});
+
+test('cli rejects unknown options and extra summary files', () => {
+  for (const args of [
+    ['fixtures/good-summary.md', '--bogus'],
+    ['fixtures/good-summary.md', 'fixtures/bad-summary.md'],
+  ]) {
+    const result = runCli(args);
+    assert.equal(result.status, 1, args.join(' '));
+    assert.match(result.stderr, /skill-output-gate:/);
+    assert.match(result.stderr, /Usage:/);
+    assert.doesNotMatch(result.stdout, /"status": "pass"/);
+  }
+});
+
+test('cli rejects missing or unsupported format values', () => {
+  for (const args of [
+    ['fixtures/good-summary.md', '--format'],
+    ['fixtures/good-summary.md', '--format', 'yaml'],
+  ]) {
+    const result = runCli(args);
+    assert.equal(result.status, 1, args.join(' '));
+    assert.match(result.stderr, /--format must be json or markdown/);
+    assert.match(result.stderr, /Usage:/);
+  }
+});
+
+test('cli rejects a missing output path', () => {
+  const result = runCli(['fixtures/good-summary.md', '--output']);
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /--output requires a path/);
+  assert.match(result.stderr, /Usage:/);
+  assert.equal(result.stdout, '');
+});
+
 test('fails negated and mixed verification statuses', () => {
   for (const verification of [
     ['Tests did not pass'],
@@ -130,4 +172,11 @@ function completeReport(overrides = {}) {
     nextActions: ['No follow-up'],
     ...overrides,
   };
+}
+
+function runCli(args) {
+  return spawnSync(process.execPath, ['src/cli.js', ...args], {
+    cwd: new URL('..', import.meta.url),
+    encoding: 'utf8',
+  });
 }
