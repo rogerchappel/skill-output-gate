@@ -1,8 +1,15 @@
 import fs from 'node:fs';
 
 const PASS_WORDS = ['pass', 'passed', 'ok', 'success', 'succeeded'];
-const FAIL_WORDS = ['fail', 'failed', 'error', 'blocked', 'not run', 'skipped'];
+const FAIL_WORDS = ['fail', 'fails', 'failed', 'failing', 'error', 'errors', 'blocked', 'not run', 'skipped', 'unsuccessful'];
 const NEGATED_PASS = /\b(?:did|does|do|has|have|had|was|were|is|are)?\s*(?:not|never)\s+(?:pass(?:ed)?|succeed(?:ed)?|successful|ok)\b/i;
+const NON_FAILURE_PHRASES = [
+  /\b(?:no|zero|0)\s+(?:fail(?:s|ed|ing)?|errors?)\b/gi,
+  /\bwithout\s+(?:fail(?:s|ed|ing)?|errors?)\b/gi,
+  /\berror[- ]free\b/gi,
+  /\berror[- ](?:handling|path|case)s?\b/gi,
+  /\b(?:previously|formerly)\s+failing\b/gi,
+];
 
 export function parseRunSummary(text, source = 'inline') {
   const body = String(text || '').replace(/\r\n/g, '\n');
@@ -99,7 +106,11 @@ function normalize(report, source) {
 }
 
 function hasWord(text, words) { return words.some(word => new RegExp(`\\b${word.replace(' ', '\\s+')}\\b`, 'i').test(text)); }
-function hasFailedVerification(text) { return NEGATED_PASS.test(text) || hasWord(text, FAIL_WORDS); }
+function hasFailedVerification(text) {
+  if (NEGATED_PASS.test(text)) return true;
+  const statusText = NON_FAILURE_PHRASES.reduce((result, phrase) => result.replace(phrase, ''), text);
+  return hasWord(statusText, FAIL_WORDS);
+}
 function unique(items) { return [...new Set(items.map(item => String(item).trim()).filter(Boolean))]; }
 function firstHeading(text) { return text.match(/^#\s+(.+)$/m)?.[1]?.trim(); }
 function firstParagraph(text) { return text.split('\n').map(line => line.trim()).find(line => line && !line.startsWith('#') && !line.startsWith('-')) || ''; }
