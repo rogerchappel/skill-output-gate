@@ -130,6 +130,48 @@ test('fails negated and mixed verification statuses', () => {
   }
 });
 
+test('fails common verification failure inflections', () => {
+  for (const verification of [
+    '1 test failing',
+    '2 tests fail',
+    'Tests are failing',
+    'Build errors',
+    'Verification was unsuccessful',
+  ]) {
+    const gate = evaluateGate(completeReport({ verification: [verification] }));
+    assert.equal(gate.status, 'fail', verification);
+    assert.ok(gate.findings.some(item => item.code === 'failed_verification'));
+  }
+});
+
+test('does not mistake nearby nonfailure wording for failed verification', () => {
+  for (const verification of [
+    'Tests passed with no errors',
+    'Tests passed without errors',
+    'Tests passed; 0 errors',
+    'Error-handling tests passed',
+    'The previously failing test passed',
+  ]) {
+    assert.equal(evaluateGate(completeReport({ verification: [verification] })).status, 'pass', verification);
+  }
+});
+
+test('cli exits with 2 for failure inflections', () => {
+  const summary = new URL('../.tmp-failing-summary.md', import.meta.url);
+  fs.writeFileSync(summary, '# Result\n\n## Summary\n\nCompleted the requested implementation.\n\n## Verification\n\n- 1 test failing\n\n## Artifacts\n\n- src/index.js\n\n## Risks\n\n- None known\n\n## Next Actions\n\n- Fix the test\n');
+
+  try {
+    const result = runCli([summary.pathname, '--format', 'json']);
+    assert.equal(result.status, 2);
+    assert.equal(result.stderr, '');
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.gate.status, 'fail');
+    assert.ok(output.gate.findings.some(item => item.code === 'failed_verification'));
+  } finally {
+    fs.rmSync(summary, { force: true });
+  }
+});
+
 test('accepts unambiguous passing verification statuses', () => {
   for (const verification of [['Tests passed'], ['Build succeeded'], ['Lint OK']]) {
     assert.equal(evaluateGate(completeReport({ verification })).status, 'pass');
