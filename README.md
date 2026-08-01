@@ -44,6 +44,11 @@ unreadable input, and `2` when the output has blocking findings.
 - verification commands are present and tied to the reported work
 - negated success wording (for example, `Tests did not pass`) is treated as a
   failed verification, even when another check passed
+- explicit failure wording and common inflections (for example, `1 test
+  failing`, `tests failed`, `build errors`, or `verification unsuccessful`)
+  produce a blocking `failed_verification` finding; ordinary nonfailure phrases
+  such as `no errors`, `without errors`, and `error-handling tests passed` are
+  excluded
 - artifact references are concrete enough for review
 - handoff text includes remaining risks or follow-up when needed
 - required artifact counts meet the configured threshold
@@ -72,4 +77,7 @@ This package is local-only. It does not send final messages, touch GitHub, publi
 
 It is a preflight heuristic, not a proof of correctness. A passing result means
 the output has the expected evidence shape; it does not prove the underlying code
-change is correct or that every verification command was run honestly.
+change is correct or that every verification command was run honestly. Failure
+classification is phrase-based rather than a full natural-language analysis, so
+unusual or ambiguous wording may need to be rewritten as an explicit pass or
+failure result.
