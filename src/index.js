@@ -4,6 +4,7 @@ const PASS_WORDS = ['pass', 'passed', 'ok', 'success', 'succeeded'];
 const FAIL_WORDS = ['fail', 'fails', 'failed', 'failing', 'error', 'errors', 'blocked', 'not run', 'skipped', 'unsuccessful'];
 const NEGATED_PASS = /\b(?:did|does|do|has|have|had|was|were|is|are)?\s*(?:not|never)\s+(?:pass(?:ed)?|succeed(?:ed)?|successful|ok)\b/i;
 const NON_FAILURE_PHRASES = [
+  /\b(?:no|none|zero|0)\s+(?:(?:tests?|checks?)\s+)?(?:fail(?:s|ed|ing)?|failures?|skipped)\b/gi,
   /\b(?:no|zero|0)\s+(?:fail(?:s|ed|ing)?|errors?)\b/gi,
   /\bwithout\s+(?:fail(?:s|ed|ing)?|errors?)\b/gi,
   /\berror[- ]free\b/gi,
