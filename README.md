@@ -47,8 +47,8 @@ unreadable input, and `2` when the output has blocking findings.
 - explicit failure wording and common inflections (for example, `1 test
   failing`, `tests failed`, `build errors`, or `verification unsuccessful`)
   produce a blocking `failed_verification` finding; ordinary nonfailure phrases
-  such as `no errors`, `without errors`, and `error-handling tests passed` are
-  excluded
+  such as `no errors`, `no tests failed`, `0 tests skipped`, `none skipped`,
+  and `error-handling tests passed` are excluded
 - artifact references are concrete enough for review
 - handoff text includes remaining risks or follow-up when needed
 - required artifact counts meet the configured threshold
