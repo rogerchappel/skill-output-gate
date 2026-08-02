@@ -53,6 +53,11 @@ unreadable input, and `2` when the output has blocking findings.
 - handoff text includes remaining risks or follow-up when needed
 - required artifact counts meet the configured threshold
 
+For Markdown input, headings and list content inside backtick or tilde fenced
+code blocks are treated as examples and ignored. This includes fences longer
+than three characters and opening fences with info strings. Only unfenced prose
+can satisfy the summary, verification, artifact, risk, and next-action checks.
+
 ## Verify
 
 Run the local release-readiness checks before publishing or promoting the CLI:
@@ -80,4 +85,6 @@ the output has the expected evidence shape; it does not prove the underlying cod
 change is correct or that every verification command was run honestly. Failure
 classification is phrase-based rather than a full natural-language analysis, so
 unusual or ambiguous wording may need to be rewritten as an explicit pass or
-failure result.
+failure result. Markdown parsing recognizes fenced code blocks, but it is not a
+complete CommonMark parser; other Markdown constructs are interpreted using the
+tool's heading-and-list heuristics.
