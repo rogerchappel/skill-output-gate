@@ -151,8 +151,41 @@ test('does not mistake nearby nonfailure wording for failed verification', () =>
     'Tests passed; 0 errors',
     'Error-handling tests passed',
     'The previously failing test passed',
+    'Tests passed; no tests failed',
+    'Tests passed; zero checks failing',
+    'Tests passed; 0 tests skipped',
+    'Tests passed; none skipped',
   ]) {
     assert.equal(evaluateGate(completeReport({ verification: [verification] })).status, 'pass', verification);
+  }
+});
+
+test('zero-result wording does not hide adjacent verification failures', () => {
+  for (const verification of [
+    'No tests failed; 1 test skipped',
+    '0 tests skipped; build failed',
+    'None skipped, but tests are failing',
+    'Zero checks failing; verification was not run',
+  ]) {
+    const gate = evaluateGate(completeReport({ verification: [verification] }));
+    assert.equal(gate.status, 'fail', verification);
+    assert.ok(gate.findings.some(item => item.code === 'failed_verification'));
+  }
+});
+
+test('cli accepts zero failed and skipped verification counts', () => {
+  for (const verification of ['Tests passed; no tests failed', 'Tests passed; 0 tests skipped', 'Tests passed; none skipped']) {
+    const summary = new URL('../.tmp-zero-result-summary.md', import.meta.url);
+    fs.writeFileSync(summary, `# Result\n\n## Summary\n\nCompleted the requested implementation.\n\n## Verification\n\n- ${verification}\n\n## Artifacts\n\n- src/index.js\n\n## Risks\n\n- None known\n\n## Next Actions\n\n- None\n`);
+
+    try {
+      const result = runCli([summary.pathname, '--format', 'json']);
+      assert.equal(result.status, 0, verification);
+      assert.equal(result.stderr, '');
+      assert.equal(JSON.parse(result.stdout).gate.status, 'pass');
+    } finally {
+      fs.rmSync(summary, { force: true });
+    }
   }
 });
 
