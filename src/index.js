@@ -16,14 +16,40 @@ export function parseRunSummary(text, source = 'inline') {
   const body = String(text || '').replace(/\r\n/g, '\n');
   if (!body.trim()) throw new Error('Run summary is empty');
   if (source.endsWith('.json')) return normalize(JSON.parse(body), source);
-  const sections = splitSections(body);
-  const title = firstHeading(body) || basename(source);
+  const prose = stripFencedCode(body);
+  const sections = splitSections(prose);
+  const title = firstHeading(prose) || basename(source);
   const verification = collectNamed(sections, ['verification', 'checks', 'tests']);
   const artifacts = collectNamed(sections, ['artifacts', 'files', 'links', 'outputs']);
   const risks = collectNamed(sections, ['risks', 'failures', 'limitations', 'known issues']);
   const nextActions = collectNamed(sections, ['next', 'follow-up', 'handoff']);
-  const summary = collectNamed(sections, ['summary', 'result', 'changes']).join(' ') || firstParagraph(body);
+  const summary = collectNamed(sections, ['summary', 'result', 'changes']).join(' ') || firstParagraph(prose);
   return normalize({ source, title, summary, verification, artifacts, risks, nextActions }, source);
+}
+
+function stripFencedCode(text) {
+  const lines = [];
+  let fence;
+
+  for (const line of text.split('\n')) {
+    if (fence) {
+      const closing = line.match(/^ {0,3}(`+|~+)\s*$/);
+      if (closing && closing[1][0] === fence.marker && closing[1].length >= fence.length) fence = undefined;
+      lines.push('');
+      continue;
+    }
+
+    const opening = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+    if (opening && (opening[1][0] !== '`' || !opening[2].includes('`'))) {
+      fence = { marker: opening[1][0], length: opening[1].length };
+      lines.push('');
+      continue;
+    }
+
+    lines.push(line);
+  }
+
+  return lines.join('\n');
 }
 
 export function loadRunSummary(path) {

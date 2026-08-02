@@ -26,6 +26,48 @@ test('renders markdown and JSON reports', () => {
   assert.equal(toJsonReport(report).gate.status, 'pass');
 });
 
+test('fenced examples cannot supply required handoff evidence', () => {
+  for (const fence of ['```markdown', '~~~~ md example']) {
+    const marker = fence[0].repeat(fence.match(/^(`+|~+)/)[0].length);
+    const report = parseRunSummary(`# Example\n\n${fence}\n## Summary\n\nImplemented the requested feature.\n\n## Verification\n\n- npm test: passed\n\n## Artifacts\n\n- src/index.js\n\n## Risks\n\n- None known\n\n## Next Actions\n\n- No follow-up\n${marker}`);
+    const gate = evaluateGate(report);
+
+    assert.equal(report.summary, '');
+    assert.deepEqual(report.verification, []);
+    assert.deepEqual(report.artifacts, []);
+    assert.deepEqual(report.risks, []);
+    assert.deepEqual(report.nextActions, []);
+    assert.equal(gate.status, 'fail');
+    assert.ok(gate.findings.some(item => item.code === 'missing_summary'));
+    assert.ok(gate.findings.some(item => item.code === 'missing_verification'));
+    assert.ok(gate.findings.some(item => item.code === 'missing_artifacts'));
+    assert.ok(gate.findings.some(item => item.code === 'missing_risk_note'));
+    assert.ok(gate.findings.some(item => item.code === 'missing_next_action'));
+  }
+});
+
+test('mixed documents collect only evidence outside longer fenced blocks', () => {
+  const report = parseRunSummary([
+    '# Result', '', '## Summary', '', 'Implemented the actual change.', '',
+    '`````markdown example', '## Summary', 'Fabricated fenced summary.',
+    '## Verification', '- fenced check passed', '## Artifacts', '- fenced.txt',
+    '## Risks', '- fenced risk', '## Next Actions', '- fenced action', '``````', '',
+    '## Verification', '- npm test: passed', '', '~~~~~text',
+    '- fence delimiter content', '~~~~~~~', '', '## Artifacts', '- src/index.js', '',
+    '## Risks', '- None known', '', '## Next Actions', '- No follow-up',
+  ].join('\n'));
+
+  assert.equal(report.summary, 'Implemented the actual change.');
+  assert.deepEqual(report.verification, ['npm test: passed']);
+  assert.deepEqual(report.artifacts, ['src/index.js']);
+  assert.deepEqual(report.risks, ['None known']);
+  assert.deepEqual(report.nextActions, ['No follow-up']);
+  assert.equal(evaluateGate(report).status, 'pass');
+  for (const items of [report.verification, report.artifacts, report.risks, report.nextActions]) {
+    assert.ok(items.every(item => !item.includes('```') && !item.includes('~~~')));
+  }
+});
+
 test('cli emits JSON for passing summaries', () => {
   const result = spawnSync(process.execPath, ['src/cli.js', 'fixtures/good-summary.md', '--format', 'json'], {
     cwd: new URL('..', import.meta.url),
