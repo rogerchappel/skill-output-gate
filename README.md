@@ -5,7 +5,7 @@ Preflight completed agent outputs for evidence, verification, and handoff qualit
 ## Quickstart
 
 ```bash
-npm install
+npm ci
 npm run smoke
 node src/cli.js fixtures/good-summary.md --format json
 ```
