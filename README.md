@@ -39,6 +39,12 @@ positional arguments, and missing or unsupported option values are usage errors.
 The command exits with `0` for acceptable output, `1` for invalid options or
 unreadable input, and `2` when the output has blocking findings.
 
+JSON input must be an object. `source`, `title`, and `summary`, when present,
+must be strings. `verification`, `artifacts`, `risks`, and `nextActions`, when
+present, must be arrays containing only strings. Invalid containers or members
+are input errors: the CLI prints a concise message to standard error and exits
+with status `1` without producing a gate report.
+
 ## What It Checks
 
 - verification commands are present and tied to the reported work
@@ -49,6 +55,10 @@ unreadable input, and `2` when the output has blocking findings.
   produce a blocking `failed_verification` finding; ordinary nonfailure phrases
   such as `no errors`, `no tests failed`, `0 tests skipped`, `none skipped`,
   and `error-handling tests passed` are excluded
+- explicit incomplete results such as a timeout, cancellation, aborted or
+  interrupted run, or incomplete verification also produce a blocking
+  `failed_verification` finding; descriptions of passing timeout handling,
+  cancellation paths, and abort cases remain acceptable
 - artifact references are concrete enough for review
 - handoff text includes remaining risks or follow-up when needed
 - required artifact counts meet the configured threshold

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 
 const PASS_WORDS = ['pass', 'passed', 'ok', 'success', 'succeeded'];
-const FAIL_WORDS = ['fail', 'fails', 'failed', 'failing', 'error', 'errors', 'blocked', 'not run', 'skipped', 'unsuccessful'];
+const FAIL_WORDS = ['fail', 'fails', 'failed', 'failing', 'error', 'errors', 'blocked', 'not run', 'skipped', 'unsuccessful', 'timeout', 'timed out', 'cancelled', 'canceled', 'aborted', 'interrupted', 'incomplete'];
 const NEGATED_PASS = /\b(?:did|does|do|has|have|had|was|were|is|are)?\s*(?:not|never)\s+(?:pass(?:ed)?|succeed(?:ed)?|successful|ok)\b/i;
 const NON_FAILURE_PHRASES = [
   /\b(?:no|none|zero|0)\s+(?:(?:tests?|checks?)\s+)?(?:fail(?:s|ed|ing)?|failures?|skipped)\b/gi,
@@ -10,12 +10,17 @@ const NON_FAILURE_PHRASES = [
   /\berror[- ]free\b/gi,
   /\berror[- ](?:handling|path|case)s?\b/gi,
   /\b(?:previously|formerly)\s+failing\b/gi,
+  /\b(?:timeout|cancell?ation|abort)(?:[- ](?:handling|path|case))s?\b/gi,
 ];
 
 export function parseRunSummary(text, source = 'inline') {
   const body = String(text || '').replace(/\r\n/g, '\n');
   if (!body.trim()) throw new Error('Run summary is empty');
-  if (source.endsWith('.json')) return normalize(JSON.parse(body), source);
+  if (source.endsWith('.json')) {
+    const report = JSON.parse(body);
+    validateJsonReport(report);
+    return normalize(report, source);
+  }
   const prose = stripFencedCode(body);
   const sections = splitSections(prose);
   const title = firstHeading(prose) || basename(source);
@@ -130,6 +135,22 @@ function normalize(report, source) {
     risks: unique(report.risks || []),
     nextActions: unique(report.nextActions || [])
   };
+}
+
+function validateJsonReport(report) {
+  if (report === null || typeof report !== 'object' || Array.isArray(report)) {
+    throw new TypeError('JSON report must be an object');
+  }
+  for (const field of ['source', 'title', 'summary']) {
+    if (field in report && typeof report[field] !== 'string') {
+      throw new TypeError(`${field} must be a string`);
+    }
+  }
+  for (const field of ['verification', 'artifacts', 'risks', 'nextActions']) {
+    if (field in report && (!Array.isArray(report[field]) || report[field].some(item => typeof item !== 'string'))) {
+      throw new TypeError(`${field} must be an array of strings`);
+    }
+  }
 }
 
 function hasWord(text, words) { return words.some(word => new RegExp(`\\b${word.replace(' ', '\\s+')}\\b`, 'i').test(text)); }
