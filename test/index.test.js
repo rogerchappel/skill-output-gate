@@ -186,6 +186,22 @@ test('fails common verification failure inflections', () => {
   }
 });
 
+test('fails explicit incomplete verification statuses', () => {
+  for (const verification of [
+    'npm test timed out',
+    'Build timeout',
+    'Lint was cancelled',
+    'Checks canceled by the operator',
+    'Verification aborted',
+    'Test run interrupted',
+    'Build incomplete',
+  ]) {
+    const gate = evaluateGate(completeReport({ verification: [verification] }));
+    assert.equal(gate.status, 'fail', verification);
+    assert.ok(gate.findings.some(item => item.code === 'failed_verification'));
+  }
+});
+
 test('does not mistake nearby nonfailure wording for failed verification', () => {
   for (const verification of [
     'Tests passed with no errors',
@@ -197,8 +213,44 @@ test('does not mistake nearby nonfailure wording for failed verification', () =>
     'Tests passed; zero checks failing',
     'Tests passed; 0 tests skipped',
     'Tests passed; none skipped',
+    'Timeout-handling tests passed',
+    'Cancellation path tests passed',
+    'Abort case passed',
   ]) {
     assert.equal(evaluateGate(completeReport({ verification: [verification] })).status, 'pass', verification);
+  }
+});
+
+test('rejects invalid JSON report shapes and section members', () => {
+  for (const [input, message] of [
+    [[], 'JSON report must be an object'],
+    [{ summary: 'Complete result summary.', verification: {}, artifacts: [], risks: [], nextActions: [] }, 'verification must be an array of strings'],
+    [{ summary: 'Complete result summary.', verification: ['Tests passed'], artifacts: [{}], risks: [], nextActions: [] }, 'artifacts must be an array of strings'],
+    [{ summary: 'Complete result summary.', verification: ['Tests passed'], artifacts: ['README.md'], risks: [null], nextActions: [] }, 'risks must be an array of strings'],
+    [{ summary: 'Complete result summary.', verification: ['Tests passed'], artifacts: ['README.md'], risks: [], nextActions: [42] }, 'nextActions must be an array of strings'],
+  ]) {
+    assert.throws(() => parseRunSummary(JSON.stringify(input), 'summary.json'), new RegExp(message));
+  }
+});
+
+test('cli reports invalid JSON shape as a concise input error', () => {
+  const summary = new URL('../.tmp-invalid-summary.json', import.meta.url);
+  fs.writeFileSync(summary, JSON.stringify({
+    summary: 'Completed the requested implementation.',
+    verification: [{ command: 'npm test', status: 'passed' }],
+    artifacts: ['src/index.js'],
+    risks: ['None known'],
+    nextActions: ['None'],
+  }));
+
+  try {
+    const result = runCli([summary.pathname, '--format', 'json']);
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /^skill-output-gate: verification must be an array of strings\n$/);
+    assert.doesNotMatch(result.stderr, /\[object Object\]/);
+  } finally {
+    fs.rmSync(summary, { force: true });
   }
 });
 
