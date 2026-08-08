@@ -83,6 +83,13 @@ Heading matching is case-insensitive and accepts a trailing colon or optional
 closing Markdown hash marks. For example, `Testsuite roadmap` is not a `Tests`
 section, and `Filesystems` is not a `Files` section.
 
+Content beneath nested subheadings remains part of the recognized parent
+section until another heading at the parent's level or higher begins. This
+allows evidence to be grouped under labels such as `### Node 20`, `### Node
+22`, or `### Package contents` without losing the verification or artifact
+entries below them. A document's initial level-one heading is treated as its
+title rather than as a report section.
+
 ## Verify
 
 Run the local release-readiness checks before publishing or promoting the CLI:
