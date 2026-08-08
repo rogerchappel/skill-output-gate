@@ -106,6 +106,22 @@ test('accepts documented Markdown evidence heading variants', () => {
   }
 });
 
+test('keeps evidence beneath nested subsections until the parent section ends', () => {
+  const report = parseRunSummary([
+    '# Result', '', '## Summary', '', 'Implemented nested section parsing.', '',
+    '## Verification', '', '### Node 20', '', '- npm test: passed', '',
+    '### Node 22', '', '- npm run release:check: passed', '',
+    '## Artifacts', '', '### Parser', '', '- src/index.js', '',
+    '### Coverage', '', '- test/index.test.js', '',
+    '## Risks', '', '- None known', '', '## Next Actions', '', '- No follow-up',
+  ].join('\n'));
+
+  assert.deepEqual(report.verification, ['npm test: passed', 'npm run release:check: passed']);
+  assert.deepEqual(report.artifacts, ['src/index.js', 'test/index.test.js']);
+  assert.deepEqual(report.risks, ['None known']);
+  assert.equal(evaluateGate(report).status, 'pass');
+});
+
 test('cli emits JSON for passing summaries', () => {
   const result = spawnSync(process.execPath, ['src/cli.js', 'fixtures/good-summary.md', '--format', 'json'], {
     cwd: new URL('..', import.meta.url),
@@ -146,6 +162,30 @@ test('cli rejects unrelated heading substrings as missing evidence', () => {
     assert.equal(result.stderr, '');
     assert.match(result.stdout, /missing_verification/);
     assert.match(result.stdout, /missing_artifacts/);
+  } finally {
+    fs.rmSync(summary, { force: true });
+  }
+});
+
+test('cli accepts evidence grouped into nested subsections', () => {
+  const summary = new URL('../.tmp-nested-sections.md', import.meta.url);
+  fs.writeFileSync(summary, [
+    '# Result', '', '## Summary', '', 'Implemented nested section parsing.', '',
+    '## Verification', '', '### Runtime', '', '- npm test: passed', '',
+    '### Packaging', '', '- npm run package:smoke: passed', '',
+    '## Artifacts', '', '### Source', '', '- src/index.js', '',
+    '### Tests', '', '- test/index.test.js', '',
+    '## Risks', '', '- None known', '', '## Next Actions', '', '- No follow-up',
+  ].join('\n'));
+
+  try {
+    const result = runCli([summary.pathname, '--format', 'json']);
+    assert.equal(result.status, 0);
+    assert.equal(result.stderr, '');
+    const output = JSON.parse(result.stdout);
+    assert.deepEqual(output.report.verification, ['npm test: passed', 'npm run package:smoke: passed']);
+    assert.deepEqual(output.report.artifacts, ['src/index.js', 'test/index.test.js']);
+    assert.equal(output.gate.status, 'pass');
   } finally {
     fs.rmSync(summary, { force: true });
   }
