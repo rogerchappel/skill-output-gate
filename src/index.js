@@ -19,6 +19,7 @@ const MARKDOWN_SECTION_HEADINGS = {
   nextActions: ['next', 'next actions', 'follow-up', 'follow up', 'handoff'],
   summary: ['summary', 'result', 'results', 'changes'],
 };
+const RECOGNIZED_MARKDOWN_HEADINGS = new Set(Object.values(MARKDOWN_SECTION_HEADINGS).flat());
 
 export function parseRunSummary(text, source = 'inline') {
   const body = String(text || '').replace(/\r\n/g, '\n');
@@ -110,11 +111,22 @@ export function toJsonReport(report, options) {
 function splitSections(text) {
   const sections = new Map([['body', []]]);
   let current = 'body';
+  let sectionLevel;
+  let sawHeading = false;
   for (const raw of text.split('\n')) {
-    const heading = raw.match(/^#{1,4}\s+(.+)$/);
+    const heading = raw.match(/^(#{1,4})\s+(.+)$/);
     if (heading) {
-      current = normalizeHeading(heading[1]);
+      const level = heading[1].length;
+      if (!sawHeading && level === 1) {
+        sawHeading = true;
+        continue;
+      }
+      sawHeading = true;
+      if (sectionLevel !== undefined && level > sectionLevel) continue;
+
+      current = normalizeHeading(heading[2]);
       if (!sections.has(current)) sections.set(current, []);
+      sectionLevel = RECOGNIZED_MARKDOWN_HEADINGS.has(current) ? level : undefined;
       continue;
     }
     sections.get(current).push(raw);
