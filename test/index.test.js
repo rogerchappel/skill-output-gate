@@ -68,6 +68,44 @@ test('mixed documents collect only evidence outside longer fenced blocks', () =>
   }
 });
 
+test('unrelated heading substrings cannot supply required evidence', () => {
+  const markdown = [
+    '# Result', '', '## Summary', '', 'Implemented the requested parser correction.', '',
+    '## Testsuite roadmap', '', '- tests passed', '',
+    '## Filesystems', '', '- src/index.js', '',
+    '## Risks', '', '- None known', '', '## Handoff', '', '- No follow-up',
+  ].join('\n');
+  const report = parseRunSummary(markdown);
+  const gate = evaluateGate(report);
+
+  assert.deepEqual(report.verification, []);
+  assert.deepEqual(report.artifacts, []);
+  assert.equal(gate.status, 'fail');
+  assert.ok(gate.findings.some(item => item.code === 'missing_verification'));
+  assert.ok(gate.findings.some(item => item.code === 'missing_artifacts'));
+});
+
+test('accepts documented Markdown evidence heading variants', () => {
+  for (const [verificationHeading, artifactHeading] of [
+    ['Verification', 'Artifacts'],
+    ['Verification Results', 'Artifact References'],
+    ['Checks Performed:', 'Files Changed ###'],
+    ['Test Results', 'Outputs'],
+  ]) {
+    const report = parseRunSummary([
+      '# Result', '', '## Summary', '', 'Implemented the requested parser correction.', '',
+      `## ${verificationHeading}`, '', '- npm test: passed', '',
+      `## ${artifactHeading}`, '', '- src/index.js', '',
+      '## Risk Assessment', '', '- None known', '',
+      '## Next Actions', '', '- No follow-up',
+    ].join('\n'));
+
+    assert.deepEqual(report.verification, ['npm test: passed'], verificationHeading);
+    assert.deepEqual(report.artifacts, ['src/index.js'], artifactHeading);
+    assert.equal(evaluateGate(report).status, 'pass', `${verificationHeading}; ${artifactHeading}`);
+  }
+});
+
 test('cli emits JSON for passing summaries', () => {
   const result = spawnSync(process.execPath, ['src/cli.js', 'fixtures/good-summary.md', '--format', 'json'], {
     cwd: new URL('..', import.meta.url),
@@ -91,6 +129,26 @@ test('cli exits with 2 for blocking findings', () => {
   assert.equal(result.stderr, '');
   assert.match(result.stdout, /Status: fail/);
   assert.match(result.stdout, /missing_artifacts/);
+});
+
+test('cli rejects unrelated heading substrings as missing evidence', () => {
+  const summary = new URL('../.tmp-false-headings.md', import.meta.url);
+  fs.writeFileSync(summary, [
+    '# Result', '', '## Summary', '', 'Implemented the requested parser correction.', '',
+    '## Testsuite roadmap', '', '- tests passed', '',
+    '## Filesystems', '', '- src/index.js', '',
+    '## Risks', '', '- None known', '', '## Handoff', '', '- No follow-up',
+  ].join('\n'));
+
+  try {
+    const result = runCli([summary.pathname, '--format', 'markdown']);
+    assert.equal(result.status, 2);
+    assert.equal(result.stderr, '');
+    assert.match(result.stdout, /missing_verification/);
+    assert.match(result.stdout, /missing_artifacts/);
+  } finally {
+    fs.rmSync(summary, { force: true });
+  }
 });
 
 test('cli writes output files for downstream handoff', () => {

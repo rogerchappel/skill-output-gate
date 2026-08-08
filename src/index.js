@@ -12,6 +12,13 @@ const NON_FAILURE_PHRASES = [
   /\b(?:previously|formerly)\s+failing\b/gi,
   /\b(?:timeout|cancell?ation|abort)(?:[- ](?:handling|path|case))s?\b/gi,
 ];
+const MARKDOWN_SECTION_HEADINGS = {
+  verification: ['verification', 'verification results', 'checks', 'checks performed', 'tests', 'test results'],
+  artifacts: ['artifacts', 'artifact references', 'files', 'files changed', 'links', 'outputs'],
+  risks: ['risks', 'risk assessment', 'failures', 'limitations', 'known issues'],
+  nextActions: ['next', 'next actions', 'follow-up', 'follow up', 'handoff'],
+  summary: ['summary', 'result', 'results', 'changes'],
+};
 
 export function parseRunSummary(text, source = 'inline') {
   const body = String(text || '').replace(/\r\n/g, '\n');
@@ -24,11 +31,11 @@ export function parseRunSummary(text, source = 'inline') {
   const prose = stripFencedCode(body);
   const sections = splitSections(prose);
   const title = firstHeading(prose) || basename(source);
-  const verification = collectNamed(sections, ['verification', 'checks', 'tests']);
-  const artifacts = collectNamed(sections, ['artifacts', 'files', 'links', 'outputs']);
-  const risks = collectNamed(sections, ['risks', 'failures', 'limitations', 'known issues']);
-  const nextActions = collectNamed(sections, ['next', 'follow-up', 'handoff']);
-  const summary = collectNamed(sections, ['summary', 'result', 'changes']).join(' ') || firstParagraph(prose);
+  const verification = collectNamed(sections, MARKDOWN_SECTION_HEADINGS.verification);
+  const artifacts = collectNamed(sections, MARKDOWN_SECTION_HEADINGS.artifacts);
+  const risks = collectNamed(sections, MARKDOWN_SECTION_HEADINGS.risks);
+  const nextActions = collectNamed(sections, MARKDOWN_SECTION_HEADINGS.nextActions);
+  const summary = collectNamed(sections, MARKDOWN_SECTION_HEADINGS.summary).join(' ') || firstParagraph(prose);
   return normalize({ source, title, summary, verification, artifacts, risks, nextActions }, source);
 }
 
@@ -106,7 +113,7 @@ function splitSections(text) {
   for (const raw of text.split('\n')) {
     const heading = raw.match(/^#{1,4}\s+(.+)$/);
     if (heading) {
-      current = heading[1].trim().toLowerCase();
+      current = normalizeHeading(heading[1]);
       if (!sections.has(current)) sections.set(current, []);
       continue;
     }
@@ -117,8 +124,12 @@ function splitSections(text) {
 
 function collectNamed(sections, names) {
   const items = [];
-  for (const [name, lines] of sections) if (names.some(key => name.includes(key))) items.push(...extractItems(lines));
+  for (const [name, lines] of sections) if (names.includes(name)) items.push(...extractItems(lines));
   return unique(items);
+}
+
+function normalizeHeading(heading) {
+  return heading.toLowerCase().replace(/\s+#+\s*$/, '').replace(/\s*:\s*$/, '').trim();
 }
 
 function extractItems(lines) {

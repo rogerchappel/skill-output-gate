@@ -68,6 +68,21 @@ code blocks are treated as examples and ignored. This includes fences longer
 than three characters and opening fences with info strings. Only unfenced prose
 can satisfy the summary, verification, artifact, risk, and next-action checks.
 
+Markdown sections are matched by their complete heading, not by words embedded
+in an unrelated heading. Accepted headings are:
+
+- summary: `Summary`, `Result`, `Results`, or `Changes`
+- verification: `Verification`, `Verification Results`, `Checks`, `Checks
+  Performed`, `Tests`, or `Test Results`
+- artifacts: `Artifacts`, `Artifact References`, `Files`, `Files Changed`,
+  `Links`, or `Outputs`
+- risks: `Risks`, `Risk Assessment`, `Failures`, `Limitations`, or `Known Issues`
+- next actions: `Next`, `Next Actions`, `Follow-up`, `Follow Up`, or `Handoff`
+
+Heading matching is case-insensitive and accepts a trailing colon or optional
+closing Markdown hash marks. For example, `Testsuite roadmap` is not a `Tests`
+section, and `Filesystems` is not a `Files` section.
+
 ## Verify
 
 Run the local release-readiness checks before publishing or promoting the CLI:
