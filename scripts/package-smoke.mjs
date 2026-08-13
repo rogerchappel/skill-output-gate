@@ -1,12 +1,11 @@
 import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-const result = spawnSync('npm', ['pack', '--dry-run'], { encoding: 'utf8' });
-const output = `${result.stdout || ''}\n${result.stderr || ''}`;
-
-if (result.status !== 0) {
-  process.stderr.write(output);
-  process.exit(result.status || 1);
-}
+const temporaryDirectory = mkdtempSync(join(tmpdir(), 'skill-output-gate-package-smoke-'));
+const packageDirectory = join(temporaryDirectory, 'package');
+const consumerDirectory = join(temporaryDirectory, 'consumer');
 
 const requiredEntries = [
   'src/cli.js',
@@ -22,10 +21,58 @@ const requiredEntries = [
   'CONTRIBUTING.md',
 ];
 
-const missing = requiredEntries.filter((entry) => !output.includes(entry));
-if (missing.length > 0) {
-  process.stderr.write(`package smoke missing entries:\n${missing.join('\n')}\n`);
-  process.exit(1);
+try {
+  mkdirSync(packageDirectory);
+  mkdirSync(consumerDirectory);
+  const pack = run('npm', ['pack', '--json', '--pack-destination', packageDirectory]);
+  const metadata = JSON.parse(pack.stdout);
+  const packedFiles = new Set(metadata[0].files.map(({ path }) => path));
+  const missing = requiredEntries.filter((entry) => !packedFiles.has(entry));
+  if (missing.length > 0) {
+    throw new Error(`package smoke missing entries:\n${missing.join('\n')}`);
+  }
+
+  const tarball = join(packageDirectory, metadata[0].filename);
+  run('npm', ['init', '--yes'], { cwd: consumerDirectory });
+  run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', tarball], {
+    cwd: consumerDirectory,
+  });
+
+  const binary = join(
+    consumerDirectory,
+    'node_modules',
+    '.bin',
+    process.platform === 'win32' ? 'skill-output-gate.cmd' : 'skill-output-gate',
+  );
+  const installedPackage = join(consumerDirectory, 'node_modules', 'skill-output-gate');
+  const help = run(binary, ['--help'], { cwd: consumerDirectory });
+  if (!help.stdout.startsWith('Usage: skill-output-gate')) {
+    throw new Error(`installed binary returned unexpected help output:\n${help.stdout}`);
+  }
+
+  run(binary, [join(installedPackage, 'fixtures', 'good-summary.md'), '--format', 'json'], {
+    cwd: consumerDirectory,
+  });
+  run(
+    binary,
+    [join(installedPackage, 'fixtures', 'bad-summary.md'), '--format', 'json'],
+    { cwd: consumerDirectory, expectedStatus: 2 },
+  );
+
+  process.stdout.write('package consumer smoke passed\n');
+} finally {
+  rmSync(temporaryDirectory, { recursive: true, force: true });
 }
 
-process.stdout.write('package smoke passed\n');
+function run(command, args, options = {}) {
+  const { expectedStatus = 0, ...spawnOptions } = options;
+  const result = spawnSync(command, args, { encoding: 'utf8', ...spawnOptions });
+  if (result.error) throw result.error;
+  if (result.status !== expectedStatus) {
+    throw new Error(
+      `${command} ${args.join(' ')} exited ${result.status}; expected ${expectedStatus}\n` +
+        `${result.stdout || ''}${result.stderr || ''}`,
+    );
+  }
+  return result;
+}
