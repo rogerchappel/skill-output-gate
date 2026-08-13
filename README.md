@@ -22,8 +22,11 @@ before an agent finalizes work.
 ## Install
 
 ```bash
-npm install -g skill-output-gate
+npm install -g github:rogerchappel/skill-output-gate
 ```
+
+The package is not yet published to the npm registry. Until the first registry
+release, install the current source directly from GitHub as shown above.
 
 ## CLI
 
@@ -102,11 +105,11 @@ npm run package:smoke
 npm run release:check
 ```
 
-`npm run package:smoke` runs a dry-run package build and fails if required
-runtime files, fixtures, examples, or support documents are missing from the
-tarball. Run it when changing fixtures, examples, or release documentation so
-the published package still carries the material users need to understand the
-gate.
+`npm run package:smoke` builds a tarball in a disposable directory, verifies
+its required runtime files and support documents, installs it into a clean
+consumer project, and exercises the installed binary against the bundled
+passing and blocking fixtures. Run it when changing fixtures, examples, or
+release documentation so the published package remains independently usable.
 
 ## Safety Notes
 
