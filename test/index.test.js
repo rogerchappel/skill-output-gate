@@ -20,6 +20,28 @@ test('fails missing artifacts and failed verification', () => {
   assert.ok(gate.findings.some(item => item.code === 'failed_verification'));
 });
 
+test('explicit artifact absence cannot satisfy required artifact counts', () => {
+  for (const artifacts of [
+    ['None'],
+    ['None listed'],
+    ['No artifacts provided'],
+    ['N/A'],
+    ['Not applicable'],
+    ['None', 'src/index.js'],
+  ]) {
+    const report = completeReport({ artifacts });
+    const concreteCount = artifacts.includes('src/index.js') ? 1 : 0;
+
+    assert.deepEqual(report.artifacts, artifacts);
+    assert.equal(evaluateGate(report).status, concreteCount ? 'pass' : 'fail', artifacts.join('; '));
+    assert.equal(
+      evaluateGate(report, { requiredArtifacts: 2 }).findings.some(item => item.code === 'missing_artifacts'),
+      true,
+      artifacts.join('; ')
+    );
+  }
+});
+
 test('renders markdown and JSON reports', () => {
   const report = parseRunSummary(fs.readFileSync('fixtures/good-summary.md', 'utf8'), 'fixtures/good-summary.md');
   assert.match(renderMarkdown(report), /Status: pass/);
@@ -145,6 +167,29 @@ test('cli exits with 2 for blocking findings', () => {
   assert.equal(result.stderr, '');
   assert.match(result.stdout, /Status: fail/);
   assert.match(result.stdout, /missing_artifacts/);
+});
+
+test('cli rejects explicit artifact absence at configured counts', () => {
+  const summary = new URL('../.tmp-absent-artifacts.md', import.meta.url);
+  fs.writeFileSync(summary, [
+    '# Result', '', '## Summary', '', 'Completed the requested implementation.', '',
+    '## Verification', '', '- npm test: passed', '',
+    '## Artifacts', '', '- None', '- src/index.js', '',
+    '## Risks', '', '- None', '', '## Next Actions', '', '- None',
+  ].join('\n'));
+
+  try {
+    const result = runCli([summary.pathname, '--format', 'json', '--required-artifacts', '2']);
+    assert.equal(result.status, 2);
+    assert.equal(result.stderr, '');
+    const output = JSON.parse(result.stdout);
+    assert.deepEqual(output.report.artifacts, ['None', 'src/index.js']);
+    assert.deepEqual(output.report.risks, ['None']);
+    assert.deepEqual(output.report.nextActions, ['None']);
+    assert.ok(output.gate.findings.some(item => item.code === 'missing_artifacts'));
+  } finally {
+    fs.rmSync(summary, { force: true });
+  }
 });
 
 test('cli rejects unrelated heading substrings as missing evidence', () => {
