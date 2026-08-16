@@ -62,9 +62,12 @@ with status `1` without producing a gate report.
   interrupted run, or incomplete verification also produce a blocking
   `failed_verification` finding; descriptions of passing timeout handling,
   cancellation paths, and abort cases remain acceptable
-- artifact references are concrete enough for review
+- artifact references are concrete enough for review; explicit absence
+  placeholders such as `None`, `No artifacts provided`, `N/A`, and `Not
+  applicable` do not count
 - handoff text includes remaining risks or follow-up when needed
-- required artifact counts meet the configured threshold
+- concrete artifact counts meet the configured threshold; absence placeholders
+  remain available in parsed output but cannot satisfy the gate
 
 For Markdown input, headings and list content inside backtick or tilde fenced
 code blocks are treated as examples and ignored. This includes fences longer

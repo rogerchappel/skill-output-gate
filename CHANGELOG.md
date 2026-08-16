@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Exclude explicit artifact-absence placeholders from required artifact counts.
 - Accept explicit zero-failure and zero-skip verification results.
 - Treat negated success phrases as failed verification results.
 - Reject invalid required-artifact thresholds in the API and CLI.

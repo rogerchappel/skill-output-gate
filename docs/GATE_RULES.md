@@ -3,7 +3,8 @@
 Blocking findings:
 
 - Missing concise summary
-- Missing artifact references
+- Missing concrete artifact references. Explicit absence placeholders such as
+  `None`, `No artifacts provided`, `N/A`, and `Not applicable` do not count.
 - Missing verification results
 - Verification that failed, was skipped, or was not run. Negated success
   phrases such as `Tests did not pass` and `Tests were not successful` count as
@@ -11,9 +12,11 @@ Blocking findings:
   Explicit zero-result phrases such as `no tests failed`, `0 tests skipped`,
   and `none skipped` are nonfailures, while any adjacent nonzero failure,
   skipped, or not-run result remains blocking.
-- Fewer artifact references than `--required-artifacts` requests. The option
-  defaults to `1` and accepts positive integers only. Missing, zero, negative,
-  fractional, and non-numeric values are CLI usage errors.
+- Fewer concrete artifact references than `--required-artifacts` requests.
+  Absence placeholders remain in parsed report output, but do not contribute to
+  this count. The option defaults to `1` and accepts positive integers only.
+  Missing, zero, negative, fractional, and non-numeric values are CLI usage
+  errors.
 
 Warning findings:
 

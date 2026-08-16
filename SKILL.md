@@ -6,7 +6,8 @@ Use this skill after an agent finishes work and before the final result is sent,
 
 - A Markdown or JSON run summary
 - Verification command results
-- Artifact references
+- Concrete artifact references (absence placeholders such as `None` do not
+  satisfy this requirement)
 - Risks, limitations, or explicit none-known note
 - Next action or explicit no-follow-up note
 
