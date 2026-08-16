@@ -20,6 +20,7 @@ const MARKDOWN_SECTION_HEADINGS = {
   summary: ['summary', 'result', 'results', 'changes'],
 };
 const RECOGNIZED_MARKDOWN_HEADINGS = new Set(Object.values(MARKDOWN_SECTION_HEADINGS).flat());
+const ARTIFACT_ABSENCE = /^(?:none(?:\s+(?:listed|provided|reported|available|created|changed))?|no\s+(?:artifacts?|files?|links?|outputs?)(?:\s+(?:listed|provided|reported|available|created|changed))?|n\/?a|not applicable)[.!]?$/i;
 
 export function parseRunSummary(text, source = 'inline') {
   const body = String(text || '').replace(/\r\n/g, '\n');
@@ -72,8 +73,9 @@ export function loadRunSummary(path) {
 export function evaluateGate(report, options = {}) {
   const findings = [];
   const requiredArtifacts = parseRequiredArtifacts(options.requiredArtifacts);
+  const artifacts = concreteArtifacts(report.artifacts);
   if (!report.summary || report.summary.length < 12) findings.push(fail('missing_summary', 'A concise result summary is required.'));
-  if (report.artifacts.length < requiredArtifacts) findings.push(fail('missing_artifacts', `Expected at least ${requiredArtifacts} artifact reference(s).`));
+  if (artifacts.length < requiredArtifacts) findings.push(fail('missing_artifacts', `Expected at least ${requiredArtifacts} concrete artifact reference(s).`));
   if (report.verification.length === 0) findings.push(fail('missing_verification', 'Verification commands or results are required.'));
   if (report.verification.some(item => hasFailedVerification(item))) findings.push(fail('failed_verification', 'A verification entry reports failure or was not run.'));
   if (!report.verification.some(item => hasWord(item, PASS_WORDS))) findings.push(warn('no_passing_check', 'No verification entry clearly reports a passing result.'));
@@ -93,7 +95,7 @@ function parseRequiredArtifacts(value) {
 
 export function readinessScore(report, gate = evaluateGate(report)) {
   const base = gate.status === 'pass' ? 100 : gate.status === 'warn' ? 80 : 40;
-  const evidence = Math.min(20, report.verification.length * 5 + report.artifacts.length * 5);
+  const evidence = Math.min(20, report.verification.length * 5 + concreteArtifacts(report.artifacts).length * 5);
   const penalties = gate.findings.filter(item => item.level === 'fail').length * 15;
   return Math.max(0, Math.min(100, base + evidence - penalties));
 }
@@ -182,6 +184,7 @@ function hasFailedVerification(text) {
   const statusText = NON_FAILURE_PHRASES.reduce((result, phrase) => result.replace(phrase, ''), text);
   return hasWord(statusText, FAIL_WORDS);
 }
+function concreteArtifacts(items) { return items.filter(item => !ARTIFACT_ABSENCE.test(String(item).trim())); }
 function unique(items) { return [...new Set(items.map(item => String(item).trim()).filter(Boolean))]; }
 function firstHeading(text) { return text.match(/^#\s+(.+)$/m)?.[1]?.trim(); }
 function firstParagraph(text) { return text.split('\n').map(line => line.trim()).find(line => line && !line.startsWith('#') && !line.startsWith('-')) || ''; }
