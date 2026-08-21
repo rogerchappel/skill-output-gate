@@ -14,7 +14,8 @@ Blocking findings:
   skipped, or not-run result remains blocking.
 - Fewer concrete artifact references than `--required-artifacts` requests.
   Absence placeholders remain in parsed report output, but do not contribute to
-  this count. The option defaults to `1` and accepts positive integers only.
+  this count. The option defaults to `1` and accepts canonical decimal positive
+  integer spellings only (no signs, leading zeroes, fractions, or exponents).
   Missing, zero, negative, fractional, and non-numeric values are CLI usage
   errors.
 

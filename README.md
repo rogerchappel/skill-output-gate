@@ -34,11 +34,14 @@ release, install the current source directly from GitHub as shown above.
 skill-output-gate <summary.md|summary.json> [--format json|markdown] [--output path] [--required-artifacts positive-integer]
 ```
 
-`--required-artifacts` defaults to `1`. When supplied, it must be a positive
-integer; missing, zero, negative, fractional, and non-numeric values are usage
-errors. Use `--output` to write the report to a file instead of standard output.
+`--required-artifacts` defaults to `1`. When supplied, it must use the canonical
+decimal spelling of a positive integer (`1`, `2`, ...); missing, signed,
+zero-padded, exponent, zero, fractional, and non-numeric values are usage errors.
+Use `--output` to write the report to a file instead of standard output.
 Options may appear before or after the summary file. Unknown options, extra
 positional arguments, and missing or unsupported option values are usage errors.
+Standalone `--help` prints usage; combining it with any other argument is a
+usage error.
 The command exits with `0` for acceptable output, `1` for invalid options or
 unreadable input, and `2` when the output has blocking findings.
 
