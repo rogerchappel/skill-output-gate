@@ -261,6 +261,19 @@ test('cli help is available without a summary file', () => {
   assert.match(result.stdout, /Usage: skill-output-gate/);
 });
 
+test('cli help does not bypass validation when combined with other arguments', () => {
+  for (const args of [
+    ['--help', '--bogus'],
+    ['fixtures/good-summary.md', '--help'],
+  ]) {
+    const result = runCli(args);
+    assert.equal(result.status, 1, args.join(' '));
+    assert.match(result.stderr, /skill-output-gate:/);
+    assert.match(result.stderr, /Usage:/);
+    assert.equal(result.stdout, '');
+  }
+});
+
 test('cli accepts documented options before the summary file', () => {
   const result = runCli(['--format', 'markdown', '--required-artifacts', '1', 'fixtures/good-summary.md']);
 
@@ -449,7 +462,7 @@ test('accepts unambiguous passing verification statuses', () => {
 });
 
 test('rejects invalid required artifact thresholds through the API', () => {
-  for (const requiredArtifacts of ['abc', -2, 1.5, 0]) {
+  for (const requiredArtifacts of ['abc', '1e2', '+1', '01', -2, 1.5, 0]) {
     assert.throws(
       () => evaluateGate(completeReport(), { requiredArtifacts }),
       /requiredArtifacts must be a positive integer/
@@ -463,6 +476,9 @@ test('rejects invalid --required-artifacts values with a CLI usage error', () =>
     ['fixtures/good-summary.md', '--required-artifacts', 'abc'],
     ['fixtures/good-summary.md', '--required-artifacts', '-2'],
     ['fixtures/good-summary.md', '--required-artifacts', '1.5'],
+    ['fixtures/good-summary.md', '--required-artifacts', '1e2'],
+    ['fixtures/good-summary.md', '--required-artifacts', '+1'],
+    ['fixtures/good-summary.md', '--required-artifacts', '01'],
     ['fixtures/good-summary.md', '--required-artifacts', '0'],
   ]) {
     const result = spawnSync(process.execPath, ['src/cli.js', ...args], {
