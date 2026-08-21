@@ -86,6 +86,9 @@ export function evaluateGate(report, options = {}) {
 }
 
 function parseRequiredArtifacts(value) {
+  if (typeof value === 'string' && !/^[1-9]\d*$/.test(value)) {
+    throw new TypeError('requiredArtifacts must be a positive integer');
+  }
   const requiredArtifacts = Number(value ?? 1);
   if (!Number.isInteger(requiredArtifacts) || requiredArtifacts < 1) {
     throw new TypeError('requiredArtifacts must be a positive integer');

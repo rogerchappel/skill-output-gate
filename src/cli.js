@@ -4,7 +4,7 @@ import { evaluateGate, loadRunSummary, renderMarkdown, toJsonReport } from './in
 
 const args = process.argv.slice(2);
 const usage = 'Usage: skill-output-gate <summary.md|summary.json> [--format json|markdown] [--output path] [--required-artifacts positive-integer]';
-if (args.includes('--help')) {
+if (args.length === 1 && args[0] === '--help') {
   console.log(usage);
   process.exit(0);
 }
@@ -66,6 +66,5 @@ function usageError(message) {
 }
 
 function isPositiveInteger(value) {
-  const number = Number(value);
-  return value !== undefined && Number.isInteger(number) && number > 0;
+  return typeof value === 'string' && /^[1-9]\d*$/.test(value);
 }
