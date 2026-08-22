@@ -59,8 +59,9 @@ with status `1` without producing a gate report.
 - explicit failure wording and common inflections (for example, `1 test
   failing`, `tests failed`, `build errors`, or `verification unsuccessful`)
   produce a blocking `failed_verification` finding; ordinary nonfailure phrases
-  such as `no errors`, `no tests failed`, `0 tests skipped`, `none skipped`,
-  and `error-handling tests passed` are excluded
+  such as `no errors`, qualified zero-error results (`no build errors`, `no lint
+  errors`, or `no TypeScript errors`), `no tests failed`, `0 tests skipped`,
+  `none skipped`, and `error-handling tests passed` are excluded
 - explicit incomplete results such as a timeout, cancellation, aborted or
   interrupted run, or incomplete verification also produce a blocking
   `failed_verification` finding; descriptions of passing timeout handling,

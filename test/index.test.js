@@ -377,6 +377,48 @@ test('does not mistake nearby nonfailure wording for failed verification', () =>
   }
 });
 
+test('accepts qualified zero-error verification phrases', () => {
+  for (const verification of [
+    'npm test passed with no build errors',
+    'Lint passed with no lint errors',
+    'Typecheck passed with no TypeScript errors',
+  ]) {
+    assert.equal(evaluateGate(completeReport({ verification: [verification] })).status, 'pass', verification);
+  }
+});
+
+test('qualified error wording does not hide genuine failures', () => {
+  for (const verification of [
+    'Build completed with 1 build error',
+    'Lint passed previously, but lint errors remain',
+    'No TypeScript errors, but tests failed',
+    'No build errors, but verification did not pass',
+  ]) {
+    const gate = evaluateGate(completeReport({ verification: [verification] }));
+    assert.equal(gate.status, 'fail', verification);
+    assert.ok(gate.findings.some(item => item.code === 'failed_verification'));
+  }
+});
+
+test('cli accepts qualified zero-error verification phrases', () => {
+  const summary = new URL('../.tmp-qualified-zero-errors.md', import.meta.url);
+  fs.writeFileSync(summary, [
+    '# Result', '', '## Summary', '', 'Completed the requested implementation.', '',
+    '## Verification', '', '- npm test passed with no build errors', '- Lint passed with no lint errors', '- Typecheck passed with no TypeScript errors', '',
+    '## Artifacts', '', '- src/index.js', '', '## Risks', '', '- None known', '',
+    '## Next Actions', '', '- No follow-up',
+  ].join('\n'));
+
+  try {
+    const result = runCli([summary.pathname, '--format', 'json']);
+    assert.equal(result.status, 0);
+    assert.equal(result.stderr, '');
+    assert.equal(JSON.parse(result.stdout).gate.status, 'pass');
+  } finally {
+    fs.rmSync(summary, { force: true });
+  }
+});
+
 test('rejects invalid JSON report shapes and section members', () => {
   for (const [input, message] of [
     [[], 'JSON report must be an object'],
