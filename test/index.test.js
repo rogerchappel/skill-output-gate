@@ -128,6 +128,31 @@ test('accepts documented Markdown evidence heading variants', () => {
   }
 });
 
+test('accepts CommonMark heading indentation and rejects four-space code blocks', () => {
+  const summary = [
+    '# Result', '', '## Summary', '', 'Implemented the requested parser correction.', '',
+    '## Verification', '', '- npm test: passed', '',
+    '## Artifacts', '', '- src/index.js', '',
+    '## Risks', '', '- None known', '', '## Next Actions', '', '- No follow-up',
+  ].join('\n');
+
+  for (const indentation of [' ', '  ', '   ']) {
+    const report = parseRunSummary(summary.replace(/^#{1,4}\s/gmu, heading => `${indentation}${heading}`));
+    assert.equal(report.title, 'Result');
+    assert.deepEqual(report.verification, ['npm test: passed']);
+    assert.deepEqual(report.artifacts, ['src/index.js']);
+    assert.deepEqual(report.risks, ['None known']);
+    assert.deepEqual(report.nextActions, ['No follow-up']);
+    assert.equal(evaluateGate(report).status, 'pass');
+  }
+
+  const report = parseRunSummary(summary.replace(/^#{1,4}\s/gmu, heading => `    ${heading}`));
+  assert.equal(report.title, 'inline');
+  assert.deepEqual(report.verification, []);
+  assert.deepEqual(report.artifacts, []);
+  assert.equal(evaluateGate(report).status, 'fail');
+});
+
 test('keeps evidence beneath nested subsections until the parent section ends', () => {
   const report = parseRunSummary([
     '# Result', '', '## Summary', '', 'Implemented nested section parsing.', '',
@@ -230,6 +255,29 @@ test('cli accepts evidence grouped into nested subsections', () => {
     const output = JSON.parse(result.stdout);
     assert.deepEqual(output.report.verification, ['npm test: passed', 'npm run package:smoke: passed']);
     assert.deepEqual(output.report.artifacts, ['src/index.js', 'test/index.test.js']);
+    assert.equal(output.gate.status, 'pass');
+  } finally {
+    fs.rmSync(summary, { force: true });
+  }
+});
+
+test('cli accepts a complete report with three-space-indented headings', () => {
+  const summary = new URL('../.tmp-indented-sections.md', import.meta.url);
+  fs.writeFileSync(summary, [
+    '   # Result', '', '   ## Summary', '', 'Implemented indented section parsing.', '',
+    '   ## Verification', '', '- npm test: passed', '',
+    '   ## Artifacts', '', '- src/index.js', '',
+    '   ## Risks', '', '- None known', '', '   ## Next Actions', '', '- No follow-up',
+  ].join('\n'));
+
+  try {
+    const result = runCli([summary.pathname, '--format', 'json']);
+    assert.equal(result.status, 0);
+    assert.equal(result.stderr, '');
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.report.title, 'Result');
+    assert.deepEqual(output.report.verification, ['npm test: passed']);
+    assert.deepEqual(output.report.artifacts, ['src/index.js']);
     assert.equal(output.gate.status, 'pass');
   } finally {
     fs.rmSync(summary, { force: true });
