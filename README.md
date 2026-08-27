@@ -89,9 +89,10 @@ in an unrelated heading. Accepted headings are:
 - risks: `Risks`, `Risk Assessment`, `Failures`, `Limitations`, or `Known Issues`
 - next actions: `Next`, `Next Actions`, `Follow-up`, `Follow Up`, or `Handoff`
 
-Heading matching is case-insensitive and accepts a trailing colon or optional
-closing Markdown hash marks. For example, `Testsuite roadmap` is not a `Tests`
-section, and `Filesystems` is not a `Files` section.
+Heading matching is case-insensitive, accepts zero to three leading spaces, and
+accepts a trailing colon or optional closing Markdown hash marks. Four-space
+indentation is a code block rather than an ATX heading. For example, `Testsuite
+roadmap` is not a `Tests` section, and `Filesystems` is not a `Files` section.
 
 Content beneath nested subheadings remains part of the recognized parent
 section until another heading at the parent's level or higher begins. This
