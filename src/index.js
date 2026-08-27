@@ -119,7 +119,7 @@ function splitSections(text) {
   let sectionLevel;
   let sawHeading = false;
   for (const raw of text.split('\n')) {
-    const heading = raw.match(/^(#{1,4})\s+(.+)$/);
+    const heading = raw.match(/^ {0,3}(#{1,4})\s+(.+)$/);
     if (heading) {
       const level = heading[1].length;
       if (!sawHeading && level === 1) {
@@ -189,7 +189,7 @@ function hasFailedVerification(text) {
 }
 function concreteArtifacts(items) { return items.filter(item => !ARTIFACT_ABSENCE.test(String(item).trim())); }
 function unique(items) { return [...new Set(items.map(item => String(item).trim()).filter(Boolean))]; }
-function firstHeading(text) { return text.match(/^#\s+(.+)$/m)?.[1]?.trim(); }
+function firstHeading(text) { return text.match(/^ {0,3}#\s+(.+)$/m)?.[1]?.trim(); }
 function firstParagraph(text) { return text.split('\n').map(line => line.trim()).find(line => line && !line.startsWith('#') && !line.startsWith('-')) || ''; }
 function basename(path) { return path.split('/').pop()?.replace(/\.[^.]+$/, '') || 'run-summary'; }
 function fail(code, message) { return { level: 'fail', code, message }; }
