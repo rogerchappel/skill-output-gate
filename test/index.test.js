@@ -406,6 +406,32 @@ test('fails explicit incomplete verification statuses', () => {
   }
 });
 
+test('fails explicit exit, return, count, and completion statuses', () => {
+  for (const verification of [
+    'npm test exited with status 1',
+    'npm test exited with code 2',
+    'npm test returned non-zero',
+    'npm test returned a nonzero exit code',
+    'npm test: 3 failures',
+    'npm test did not complete',
+  ]) {
+    const gate = evaluateGate(completeReport({ verification: [verification] }));
+    assert.equal(gate.status, 'fail', verification);
+    assert.ok(gate.findings.some(item => item.code === 'failed_verification'));
+  }
+});
+
+test('accepts nearby successful exit, return, count, and completion statuses', () => {
+  for (const verification of [
+    'npm test exited with status 0 and passed',
+    'npm test returned zero and passed',
+    'npm test: 0 failures; all tests passed',
+    'npm test did complete successfully',
+  ]) {
+    assert.equal(evaluateGate(completeReport({ verification: [verification] })).status, 'pass', verification);
+  }
+});
+
 test('does not mistake nearby nonfailure wording for failed verification', () => {
   for (const verification of [
     'Tests passed with no errors',
@@ -542,6 +568,21 @@ test('cli exits with 2 for failure inflections', () => {
     assert.ok(output.gate.findings.some(item => item.code === 'failed_verification'));
   } finally {
     fs.rmSync(summary, { force: true });
+  }
+});
+
+test('cli exits with 2 for explicit nonzero and incomplete summaries', () => {
+  for (const verification of ['npm test exited with status 1', 'npm test returned non-zero', 'npm test: 3 failures', 'npm test did not complete']) {
+    const summary = new URL('../.tmp-explicit-failure-summary.md', import.meta.url);
+    fs.writeFileSync(summary, `# Result\n\n## Summary\n\nCompleted the requested implementation.\n\n## Verification\n\n- ${verification}\n\n## Artifacts\n\n- src/index.js\n\n## Risks\n\n- Verification failed\n\n## Next Actions\n\n- Fix the check\n`);
+
+    try {
+      const result = runCli([summary.pathname, '--format', 'json']);
+      assert.equal(result.status, 2, verification);
+      assert.equal(JSON.parse(result.stdout).gate.findings.some(item => item.code === 'failed_verification'), true);
+    } finally {
+      fs.rmSync(summary, { force: true });
+    }
   }
 });
 
