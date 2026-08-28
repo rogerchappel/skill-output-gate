@@ -426,7 +426,7 @@ test('accepts nearby successful exit, return, count, and completion statuses', (
     'npm test exited with status 0 and passed',
     'npm test returned zero and passed',
     'npm test: 0 failures; all tests passed',
-    'npm test did complete successfully',
+    'npm test did complete; tests passed',
   ]) {
     assert.equal(evaluateGate(completeReport({ verification: [verification] })).status, 'pass', verification);
   }
