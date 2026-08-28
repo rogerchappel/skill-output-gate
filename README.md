@@ -62,6 +62,10 @@ with status `1` without producing a gate report.
   such as `no errors`, qualified zero-error results (`no build errors`, `no lint
   errors`, or `no TypeScript errors`), `no tests failed`, `0 tests skipped`,
   `none skipped`, and `error-handling tests passed` are excluded
+- explicit nonzero process results (`exited with status 1` or `returned
+  non-zero`), positive failure counts (`3 failures`), and `did not complete`
+  wording also produce a blocking `failed_verification`; zero statuses and zero
+  failure counts remain acceptable when accompanied by a passing result
 - explicit incomplete results such as a timeout, cancellation, aborted or
   interrupted run, or incomplete verification also produce a blocking
   `failed_verification` finding; descriptions of passing timeout handling,
