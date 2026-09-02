@@ -70,6 +70,10 @@ with status `1` without producing a gate report.
   interrupted run, or incomplete verification also produce a blocking
   `failed_verification` finding; descriptions of passing timeout handling,
   cancellation paths, and abort cases remain acceptable
+- explicit non-execution results such as `Tests were not executed`, `Tests were
+  never run`, `Tests could not be run`, and `Tests were omitted` also produce a
+  blocking `failed_verification`; positive execution wording remains acceptable
+  when it reports a passing result
 - artifact references are concrete enough for review; explicit absence
   placeholders such as `None`, `No artifacts provided`, `N/A`, and `Not
   applicable` do not count

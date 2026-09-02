@@ -9,6 +9,8 @@ Blocking findings:
 - Verification that failed, was skipped, or was not run. Negated success
   phrases such as `Tests did not pass` and `Tests were not successful` count as
   failures; a passing check elsewhere in the report does not override them.
+  Common explicit non-execution forms—`not executed`, `never run`, `could not
+  be run`, and `Tests were omitted`—are blocking as well.
   Explicit zero-result phrases such as `no tests failed`, `0 tests skipped`,
   and `none skipped` are nonfailures, while any adjacent nonzero failure,
   skipped, or not-run result remains blocking.
