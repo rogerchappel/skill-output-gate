@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 
-const PASS_WORDS = ['pass', 'passed', 'ok', 'success', 'succeeded'];
+const PASS_WORDS = ['pass', 'passed', 'ok', 'success', 'successful', 'successfully', 'succeeded'];
 const FAIL_WORDS = ['fail', 'fails', 'failed', 'failing', 'error', 'errors', 'blocked', 'not run', 'skipped', 'unsuccessful', 'timeout', 'timed out', 'cancelled', 'canceled', 'aborted', 'interrupted', 'incomplete'];
 const NEGATED_PASS = /\b(?:did|does|do|has|have|had|was|were|is|are)?\s*(?:not|never)\s+(?:pass(?:ed)?|succeed(?:ed)?|successful|ok)\b/i;
 const EXPLICIT_FAILURE_STATUS = /(?:\bexit(?:ed)?\s+(?:with\s+)?(?:status|code)\s+[1-9]\d*\b|\breturn(?:ed)?\s+(?:a\s+)?non[- ]?zero(?:\s+(?:exit\s+)?(?:status|code))?\b|\b[1-9]\d*\s+(?:tests?\s+)?failures?\b|\bdid\s+not\s+complete\b)/i;
+const NON_EXECUTION_STATUS = /\b(?:not\s+executed|never\s+run|could\s+not\s+be\s+run|(?:tests?|checks?|verification|build|lint)\s+(?:(?:was|were)\s+)?omitted)\b/i;
 const NON_FAILURE_PHRASES = [
   /\b(?:no|none|zero|0)\s+(?:(?:tests?|checks?)\s+)?(?:fail(?:s|ed|ing)?|failures?|skipped)\b/gi,
   /\b(?:no|zero|0)\s+(?:(?:build|lint|typescript)\s+)?(?:fail(?:s|ed|ing)?|errors?)\b/gi,
@@ -184,7 +185,7 @@ function validateJsonReport(report) {
 
 function hasWord(text, words) { return words.some(word => new RegExp(`\\b${word.replace(' ', '\\s+')}\\b`, 'i').test(text)); }
 function hasFailedVerification(text) {
-  if (NEGATED_PASS.test(text) || EXPLICIT_FAILURE_STATUS.test(text)) return true;
+  if (NEGATED_PASS.test(text) || EXPLICIT_FAILURE_STATUS.test(text) || NON_EXECUTION_STATUS.test(text)) return true;
   const statusText = NON_FAILURE_PHRASES.reduce((result, phrase) => result.replace(phrase, ''), text);
   return hasWord(statusText, FAIL_WORDS);
 }
