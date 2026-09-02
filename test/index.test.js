@@ -406,6 +406,30 @@ test('fails explicit incomplete verification statuses', () => {
   }
 });
 
+test('fails explicit non-execution verification statuses', () => {
+  for (const verification of [
+    'Tests were not executed.',
+    'Tests were never run.',
+    'Tests could not be run.',
+    'Tests were omitted.',
+  ]) {
+    const gate = evaluateGate(completeReport({ verification: [verification] }));
+    assert.equal(gate.status, 'fail', verification);
+    assert.ok(gate.findings.some(item => item.code === 'failed_verification'));
+  }
+});
+
+test('accepts nearby positive execution wording', () => {
+  for (const verification of [
+    'Tests were executed and passed.',
+    'Tests were run successfully.',
+    'Tests could be run and passed.',
+    'Tests included the omitted-case regression and passed.',
+  ]) {
+    assert.equal(evaluateGate(completeReport({ verification: [verification] })).status, 'pass', verification);
+  }
+});
+
 test('fails explicit exit, return, count, and completion statuses', () => {
   for (const verification of [
     'npm test exited with status 1',
@@ -575,6 +599,21 @@ test('cli exits with 2 for explicit nonzero and incomplete summaries', () => {
   for (const verification of ['npm test exited with status 1', 'npm test returned non-zero', 'npm test: 3 failures', 'npm test did not complete']) {
     const summary = new URL('../.tmp-explicit-failure-summary.md', import.meta.url);
     fs.writeFileSync(summary, `# Result\n\n## Summary\n\nCompleted the requested implementation.\n\n## Verification\n\n- ${verification}\n\n## Artifacts\n\n- src/index.js\n\n## Risks\n\n- Verification failed\n\n## Next Actions\n\n- Fix the check\n`);
+
+    try {
+      const result = runCli([summary.pathname, '--format', 'json']);
+      assert.equal(result.status, 2, verification);
+      assert.equal(JSON.parse(result.stdout).gate.findings.some(item => item.code === 'failed_verification'), true);
+    } finally {
+      fs.rmSync(summary, { force: true });
+    }
+  }
+});
+
+test('cli exits with 2 for explicit non-execution summaries', () => {
+  for (const verification of ['Tests were not executed.', 'Tests were never run.', 'Tests could not be run.', 'Tests were omitted.']) {
+    const summary = new URL('../.tmp-non-execution-summary.md', import.meta.url);
+    fs.writeFileSync(summary, `# Result\n\n## Summary\n\nCompleted the requested implementation.\n\n## Verification\n\n- ${verification}\n\n## Artifacts\n\n- src/index.js\n\n## Risks\n\n- Verification incomplete\n\n## Next Actions\n\n- Run the check\n`);
 
     try {
       const result = runCli([summary.pathname, '--format', 'json']);
