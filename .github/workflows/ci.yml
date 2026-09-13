@@ -9,7 +9,8 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  verify:
+    name: Verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,4 +19,9 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run release:check
+      - name: Syntax check
+        run: npm run check
+      - name: Unit tests
+        run: npm test
+      - name: Smoke test
+        run: npm run smoke
